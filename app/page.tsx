@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { userApi, User, bookApi, Book } from '@/lib/api';
-import { Users, BookOpen, Search, Plus, Edit, Trash2, X, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Users, BookOpen, Search, Plus, Edit, Trash2, Eye, X, ChevronRight, AlertTriangle, KeyRound, Calendar, Tag } from 'lucide-react';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'users' | 'books'>('users');
@@ -11,6 +11,9 @@ export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'error' | 'success' | ''; text: string }>({ type: '', text: '' });
+
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,6 +54,34 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleGetUserById = async (id: string) => {
+    setLoading(true);
+    try {
+      const res = await userApi.getById(id);
+      setSelectedUser(res.data);
+      notify('success', `GET /users/${id} สำเร็จ`);
+    } catch (err: any) {
+      setSelectedUser(null);
+      notify('error', `GET /users/${id} ล้มเหลว: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGetBookById = async (id: string) => {
+    setLoading(true);
+    try {
+      const res = await bookApi.getById(id);
+      setSelectedBook(res.data);
+      notify('success', `GET /book/${id} สำเร็จ`);
+    } catch (err: any) {
+      setSelectedBook(null);
+      notify('error', `GET /book/${id} ล้มเหลว: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -99,7 +130,7 @@ export default function DashboardPage() {
       if (activeTab === 'users') {
         if (editingId) {
           await userApi.update(editingId, userFormData);
-          notify('success', `อัปเดต User ID #${editingId} สำเร็จ`);
+          notify('success', `อัปเดต User ID ${editingId} สำเร็จ`);
         } else {
           await userApi.create(userFormData);
           notify('success', 'เพิ่ม User ใหม่สำเร็จ');
@@ -107,7 +138,7 @@ export default function DashboardPage() {
       } else {
         if (editingId) {
           await bookApi.update(editingId, bookFormData);
-          notify('success', `อัปเดตหนังสือ ID #${editingId} สำเร็จ`);
+          notify('success', `อัปเดตหนังสือ ID ${editingId} สำเร็จ`);
         } else {
           await bookApi.create(bookFormData);
           notify('success', 'เพิ่มหนังสือใหม่สำเร็จ');
@@ -133,10 +164,12 @@ export default function DashboardPage() {
     try {
       if (itemToDelete.type === 'users') {
         await userApi.delete(itemToDelete.id);
-        notify('success', `ลบ User ID #${itemToDelete.id} สำเร็จ`);
+        notify('success', `ลบ User ID ${itemToDelete.id} สำเร็จ`);
+        if (selectedUser?.id === itemToDelete.id) setSelectedUser(null);
       } else {
         await bookApi.delete(itemToDelete.id);
-        notify('success', `ลบหนังสือ ID #${itemToDelete.id} สำเร็จ`);
+        notify('success', `ลบหนังสือ ID ${itemToDelete.id} สำเร็จ`);
+        if (selectedBook?.id === itemToDelete.id) setSelectedBook(null);
       }
       setDeleteModalOpen(false);
       setItemToDelete(null);
@@ -177,7 +210,7 @@ export default function DashboardPage() {
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">เมนูระบบหลัก</h2>
           
           <button 
-            onClick={() => { setActiveTab('users'); setSearchTerm(''); }}
+            onClick={() => { setActiveTab('users'); setSearchTerm(''); setSelectedUser(null); setSelectedBook(null); }}
             className={`w-full text-left group p-4 rounded-2xl border transition flex items-center justify-between gap-3 ${
               activeTab === 'users' 
                 ? 'bg-indigo-50/80 border-indigo-200 shadow-2xs' 
@@ -201,7 +234,7 @@ export default function DashboardPage() {
           </button>
 
           <button 
-            onClick={() => { setActiveTab('books'); setSearchTerm(''); }}
+            onClick={() => { setActiveTab('books'); setSearchTerm(''); setSelectedUser(null); setSelectedBook(null); }}
             className={`w-full text-left group p-4 rounded-2xl border transition flex items-center justify-between gap-3 ${
               activeTab === 'books' 
                 ? 'bg-teal-50/80 border-teal-200 shadow-2xs' 
@@ -267,6 +300,39 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {activeTab === 'users' && selectedUser && (
+          <div className="bg-indigo-50/80 border border-indigo-200 p-4 rounded-2xl relative">
+            <button onClick={() => setSelectedUser(null)} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">ข้อมูลรายบุคคล (GET /users/{selectedUser.id})</span>
+            <div className="mt-3 flex items-center gap-3">
+              <img src={selectedUser.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} alt="" className="w-12 h-12 rounded-full object-cover bg-white border border-indigo-200" />
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">{selectedUser.first_name} {selectedUser.last_name} <span className="font-mono text-xs text-indigo-600">(@{selectedUser.username})</span></h4>
+                <div className="flex flex-wrap gap-2 mt-1 text-[11px] text-slate-600">
+                  <span className="bg-white px-2 py-0.5 rounded border border-indigo-100 font-mono">ID: {selectedUser.id}</span>
+                  <span className="bg-white px-2 py-0.5 rounded border border-indigo-100 font-mono flex items-center gap-1"><KeyRound className="w-3 h-3" /> {selectedUser.password || '-'}</span>
+                  <span className="bg-white px-2 py-0.5 rounded border border-indigo-100 flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(selectedUser.created_at)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'books' && selectedBook && (
+          <div className="bg-teal-50/80 border border-teal-200 p-4 rounded-2xl relative">
+            <button onClick={() => setSelectedBook(null)} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+            <span className="text-[11px] font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded">ข้อมูลรายบุคคล (GET /book/{selectedBook.id})</span>
+            <div className="mt-3 space-y-1">
+              <h4 className="text-sm font-bold text-slate-900">{selectedBook.book_name}</h4>
+              <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                <span className="bg-white px-2 py-0.5 rounded border border-teal-100 font-mono">ID: {selectedBook.id}</span>
+                <span className="bg-white px-2 py-0.5 rounded border border-teal-100 font-semibold text-teal-600 flex items-center gap-1"><Tag className="w-3 h-3" /> ฿{selectedBook.book_price}</span>
+                <span className="bg-white px-2 py-0.5 rounded border border-teal-100 flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(selectedBook.created_at)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'users' ? (
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="w-full text-left border-collapse">
@@ -300,9 +366,12 @@ export default function DashboardPage() {
                       </td>
                       <td className="py-3 px-3 font-mono text-slate-500">{user.password || '-'}</td>
                       <td className="py-3 px-3 text-slate-500">{formatDate(user.created_at)}</td>
-                      <td className="py-3 px-3 text-right space-x-1 whitespace-nowrap">
-                        <button onClick={() => handleOpenEditModal(user)} title="แก้ไข" className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleOpenDeleteModal(user.id, `${user.first_name} ${user.last_name}`, 'users')} title="ลบ" className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
+                          <button onClick={() => handleGetUserById(user.id)} title="ดูข้อมูล (GET /users/:id)" className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"><Eye className="w-4 h-4" /></button>
+                          <button onClick={() => handleOpenEditModal(user)} title="แก้ไข (PUT)" className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => handleOpenDeleteModal(user.id, `${user.first_name} ${user.last_name}`, 'users')} title="ลบ (DELETE)" className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -334,9 +403,12 @@ export default function DashboardPage() {
                       <td className="py-3 px-3 font-bold text-slate-800">{book.book_name || 'ไม่มีชื่อ'}</td>
                       <td className="py-3 px-3 font-semibold text-teal-600">฿{book.book_price || '0'}</td>
                       <td className="py-3 px-3 text-slate-500">{formatDate(book.created_at)}</td>
-                      <td className="py-3 px-3 text-right space-x-1 whitespace-nowrap">
-                        <button onClick={() => handleOpenEditModal(book)} title="แก้ไข" className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleOpenDeleteModal(book.id, book.book_name || 'ไม่มีชื่อ', 'books')} title="ลบ" className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
+                          <button onClick={() => handleGetBookById(book.id)} title="ดูข้อมูล (GET /book/:id)" className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"><Eye className="w-4 h-4" /></button>
+                          <button onClick={() => handleOpenEditModal(book)} title="แก้ไข (PUT)" className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => handleOpenDeleteModal(book.id, book.book_name || 'ไม่มีชื่อ', 'books')} title="ลบ (DELETE)" className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -353,8 +425,8 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-800">
                 {activeTab === 'users' 
-                  ? (editingId ? `แก้ไข User ID #${editingId}` : 'เพิ่ม User ใหม่') 
-                  : (editingId ? `แก้ไขหนังสือ ID #${editingId}` : 'เพิ่มหนังสือใหม่')}
+                  ? (editingId ? `แก้ไข User ID ${editingId}` : 'เพิ่ม User ใหม่') 
+                  : (editingId ? `แก้ไขหนังสือ ID ${editingId}` : 'เพิ่มหนังสือใหม่')}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
@@ -408,6 +480,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {deleteModalOpen && itemToDelete && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-2xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">

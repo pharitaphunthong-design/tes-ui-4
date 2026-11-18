@@ -20,7 +20,6 @@ export interface User {
   created_at?: string;
 }
 
-
 export interface Book {
   id: string;
   book_name: string;

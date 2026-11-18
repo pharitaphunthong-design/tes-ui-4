@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { bookApi, Book } from '@/lib/api';
 import { Search, Plus, Edit, Trash2, Eye, AlertCircle, CheckCircle2, X, BookOpen, RefreshCw, Calendar, Tag, AlertTriangle } from 'lucide-react';
@@ -19,10 +20,10 @@ export default function BooksPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
 
-
   const notify = (type: 'error' | 'success', text: string) => {
     setStatusMsg({ type, text });
   };
+
   const fetchBooks = async () => {
     setLoading(true);
     try {
@@ -35,10 +36,10 @@ export default function BooksPage() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchBooks();
   }, []);
-
 
   const handleGetById = async (targetId?: string) => {
     const id = targetId || searchId.trim();
@@ -55,7 +56,6 @@ export default function BooksPage() {
       setLoading(false);
     }
   };
-
 
   const openModal = (book?: Book) => {
     if (book) {
@@ -94,11 +94,11 @@ export default function BooksPage() {
     }
   };
 
-
   const confirmDelete = (book: Book) => {
     setBookToDelete(book);
     setDeleteModalOpen(true);
   };
+
   const handleDeleteExecute = async () => {
     if (!bookToDelete) return;
     setLoading(true);
@@ -116,7 +116,6 @@ export default function BooksPage() {
     }
   };
 
-
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('th-TH', {
@@ -125,7 +124,6 @@ export default function BooksPage() {
       day: 'numeric',
     });
   };
-
 
   return (
     <div className="space-y-6">
@@ -139,14 +137,13 @@ export default function BooksPage() {
         </div>
       )}
 
-
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">ระบบจัดการคลังหนังสือ (BOOK)</h1>
           <p className="text-xs text-slate-500 mt-0.5 font-mono">Endpoint: /book (ทั้งหมด {books.length} รายการ)</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-au to">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           <button onClick={fetchBooks} title="รีเฟรชข้อมูล" className="p-2.5 border border-slate-300 rounded-xl hover:bg-slate-50 text-slate-600 transition">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -167,7 +164,6 @@ export default function BooksPage() {
           </button>
         </div>
       </div>
-    
 
       {selectedBook && (
         <div className="bg-teal-50/80 border border-teal-200 p-5 rounded-2xl relative">
@@ -190,35 +186,56 @@ export default function BooksPage() {
           </div>
         </div>
       )}
-      
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {books.map((book) => (
-          <div key={book.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-md transition">
-            <div className="p-5">
-              <div className="flex justify-between items-start gap-2 mb-3">
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">ID: {book.id}</span>
-                <span className="text-xs text-slate-400">{formatDate(book.created_at)}</span>
-              </div>
-              <h3 className="font-bold text-slate-800 text-base line-clamp-2 min-h-[3rem]">
-                {book.book_name || 'ไม่มีชื่อหนังสือ'}
-              </h3>
-              <p className="mt-4 text-teal-600 font-bold text-lg flex items-center gap-1">
-                <span className="text-xs font-normal text-slate-400">ราคา</span> ฿{book.book_price || '0'}
-              </p>
-            </div>
-
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-              <button onClick={() => handleGetById(book.id)} className="text-xs text-slate-600 hover:text-teal-600 flex items-center gap-1 font-medium">
-                <Eye className="w-3.5 h-3.5" /> รายละเอียด
-              </button>
-              <div className="space-x-1">
-                <button onClick={() => openModal(book)} title="แก้ไข" className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"><Edit className="w-4 h-4" /></button>
-                <button onClick={() => confirmDelete(book)} title="ลบ" className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                <th className="py-3.5 px-4">ID</th>
+                <th className="py-3.5 px-4">ชื่อหนังสือ</th>
+                <th className="py-3.5 px-4">ราคา</th>
+                <th className="py-3.5 px-4">วันที่สร้าง</th>
+                <th className="py-3.5 px-4 text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {books.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">ไม่พบข้อมูลหนังสือ</td>
+                </tr>
+              ) : (
+                books.map((book) => (
+                  <tr key={book.id} className="hover:bg-slate-50/80 transition">
+                    <td className="py-3.5 px-4 font-mono text-slate-500">{book.id}</td>
+                    <td className="py-3.5 px-4 font-bold text-slate-800">
+                      {book.book_name || 'ไม่มีชื่อหนังสือ'}
+                    </td>
+                    <td className="py-3.5 px-4 font-semibold text-teal-600">
+                      ฿{book.book_price || '0'}
+                    </td>
+                    <td className="py-3.5 px-4 text-xs text-slate-500">
+                      {formatDate(book.created_at)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1 p-0.5 rounded-xl">
+                        <button onClick={() => handleGetById(book.id)} title="ดูข้อมูลรายบุคคล (GET /book/:id)" className="p-2 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition inline-flex items-center justify-center">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => openModal(book)} title="แก้ไขข้อมูล (PUT)" className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition inline-flex items-center justify-center">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => confirmDelete(book)} title="ลบข้อมูล (DELETE)" className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition inline-flex items-center justify-center">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {deleteModalOpen && bookToDelete && (
